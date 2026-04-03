@@ -13,16 +13,29 @@ const domNode = document.getElementById('root') as HTMLDivElement;
 const root = createRoot(domNode);
 
 const App = () => {
+	const defaultArticleStateLocalData = localStorage.getItem(
+		'defaultArticleState'
+	);
 	return (
 		<main
 			className={clsx(styles.main)}
 			style={
 				{
-					'--font-family': defaultArticleState.fontFamilyOption.value,
-					'--font-size': defaultArticleState.fontSizeOption.value,
-					'--font-color': defaultArticleState.fontColor.value,
-					'--container-width': defaultArticleState.contentWidth.value,
-					'--bg-color': defaultArticleState.backgroundColor.value,
+					'--font-family': defaultArticleStateLocalData
+						? JSON.parse(defaultArticleStateLocalData).fontFamilyOption.value
+						: defaultArticleState,
+					'--font-size': defaultArticleStateLocalData
+						? JSON.parse(defaultArticleStateLocalData).fontSizeOption.value
+						: defaultArticleState,
+					'--font-color': defaultArticleStateLocalData
+						? JSON.parse(defaultArticleStateLocalData).fontColor.value
+						: defaultArticleState,
+					'--container-width': defaultArticleStateLocalData
+						? JSON.parse(defaultArticleStateLocalData).contentWidth.value
+						: defaultArticleState,
+					'--bg-color': defaultArticleStateLocalData
+						? JSON.parse(defaultArticleStateLocalData).backgroundColor.value
+						: defaultArticleState,
 				} as CSSProperties
 			}>
 			<ArticleParamsForm />
