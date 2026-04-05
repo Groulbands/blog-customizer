@@ -10,70 +10,64 @@ import {
 	fontSizeOptions,
 	backgroundColors,
 	contentWidthArr,
+	ArticleStateType,
 	defaultArticleState,
 } from 'src/constants/articleProps';
 import { Button } from 'src/ui/button';
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useEffect } from 'react';
+
+import clsx from 'clsx';
 
 import styles from './ArticleParamsForm.module.scss';
 
-export const ArticleParamsForm = () => {
+type ArticleParamsFormProps = {
+	artState: ArticleStateType;
+	setArtState: React.Dispatch<React.SetStateAction<ArticleStateType>>;
+};
+
+export const ArticleParamsForm = ({
+	artState,
+	setArtState,
+}: ArticleParamsFormProps) => {
 	const [isOpen, setIsOpen] = useState<boolean>(false);
 	const asideRef = useRef<HTMLElement>(null);
-	const defaultArticleStateLocalData = localStorage.getItem(
-		'defaultArticleState'
-	);
-	const [artState, setArtState] = useState(
-		defaultArticleStateLocalData
-			? JSON.parse(defaultArticleStateLocalData)
-			: defaultArticleState
-	);
-	const mainRef = document.getElementsByTagName('main')[0];
+	const [artStateTemp, setArtStateTemp] = useState<ArticleStateType>(artState);
 
-	const handleCloseSideBar = useCallback((e: Event) => {
-		if (
-			asideRef &&
-			e.target instanceof Element &&
-			!asideRef.current?.contains(e.target) &&
-			!e.target.closest('[role="button"]')
-		) {
-			setIsOpen(false);
-			asideRef.current?.classList.toggle(styles.container_open);
+	useEffect(() => {
+		if (!isOpen) return;
+
+		const handleCloseSideBar = (e: MouseEvent) => {
+			if (
+				asideRef.current &&
+				e.target instanceof Element &&
+				!asideRef.current?.contains(e.target) &&
+				!e.target.closest('[role="button"]')
+			) {
+				setIsOpen(false);
+			}
+		};
+		document.addEventListener('mousedown', handleCloseSideBar);
+
+		return () => {
 			document.removeEventListener('mousedown', handleCloseSideBar);
-		}
-	}, []);
+		};
+	}, [isOpen]);
 
-	const handleChangeState = useCallback(
-		(value: OptionType, stateOption: string) => {
-			setArtState({ ...artState, [stateOption]: value });
-		},
-		[]
-	);
+	const handleChangeState = (value: OptionType, stateOption: string) => {
+		setArtStateTemp({ ...artStateTemp, [stateOption]: value });
+	};
 
-	const confirmChange = () => {
+	const confirmChange = (submit: React.FormEvent<HTMLFormElement>) => {
+		submit.preventDefault();
 		if (confirm('Подтвердите применение стилей')) {
-			localStorage.setItem('defaultArticleState', JSON.stringify(artState));
-			mainRef?.style.setProperty(
-				'--font-family',
-				artState.fontFamilyOption.value
-			);
-			mainRef?.style.setProperty('--font-size', artState.fontSizeOption.value);
-			mainRef?.style.setProperty('--font-color', artState.fontColor.value);
-			mainRef?.style.setProperty(
-				'--container-width',
-				artState.contentWidth.value
-			);
-			mainRef?.style.setProperty('--bg-color', artState.backgroundColor.value);
+			setArtState(artStateTemp);
 		}
 	};
 
 	const cancelChange = () => {
 		if (confirm('Подтвердите сброс стилей')) {
-			setArtState(
-				defaultArticleStateLocalData
-					? JSON.parse(defaultArticleStateLocalData)
-					: defaultArticleState
-			);
+			setArtState(defaultArticleState);
+			setArtStateTemp(defaultArticleState);
 		}
 	};
 
@@ -82,17 +76,18 @@ export const ArticleParamsForm = () => {
 			<ArrowButton
 				isOpen={isOpen}
 				onClick={() => {
-					if (isOpen) {
-						document.removeEventListener('mousedown', handleCloseSideBar);
-					} else {
-						document.addEventListener('mousedown', handleCloseSideBar);
-					}
 					setIsOpen(!isOpen);
-					asideRef.current?.classList.toggle(styles.container_open);
 				}}
 			/>
-			<aside ref={asideRef} className={styles.container}>
-				<form className={styles.form}>
+			<aside
+				ref={asideRef}
+				className={clsx(styles.container, { [styles.container_open]: isOpen })}>
+				<form
+					className={styles.form}
+					onSubmit={(submit) => {
+						confirmChange(submit);
+					}}
+					onReset={cancelChange}>
 					<Text as={'h2'} size={31} weight={800} uppercase>
 						ЗАДАЙТЕ ПАРАМЕТРЫ
 					</Text>
@@ -102,7 +97,7 @@ export const ArticleParamsForm = () => {
 						}}
 						title='ШРИФТ'
 						options={fontFamilyOptions}
-						selected={artState.fontFamilyOption}
+						selected={artStateTemp.fontFamilyOption}
 					/>
 					<RadioGroup
 						onChange={(value) => {
@@ -110,7 +105,7 @@ export const ArticleParamsForm = () => {
 						}}
 						name='fontSizeRadio'
 						options={fontSizeOptions}
-						selected={artState.fontSizeOption}
+						selected={artStateTemp.fontSizeOption}
 						title='РАЗМЕР ШРИФТА'
 					/>
 					<Select
@@ -119,7 +114,7 @@ export const ArticleParamsForm = () => {
 						}}
 						title='ЦВЕТ ШРИФТА'
 						options={fontColors}
-						selected={artState.fontColor}
+						selected={artStateTemp.fontColor}
 					/>
 					<Separator></Separator>
 					<Select
@@ -128,7 +123,7 @@ export const ArticleParamsForm = () => {
 						}}
 						title='ЦВЕТ ФОНА'
 						options={backgroundColors}
-						selected={artState.backgroundColor}
+						selected={artStateTemp.backgroundColor}
 					/>
 					<Select
 						onChange={(value) => {
@@ -136,25 +131,11 @@ export const ArticleParamsForm = () => {
 						}}
 						title='ШИРИНА КОНТЕНТА'
 						options={contentWidthArr}
-						selected={artState.contentWidth}
+						selected={artStateTemp.contentWidth}
 					/>
 					<div className={styles.bottomContainer}>
-						<Button
-							onClick={() => {
-								cancelChange();
-							}}
-							title='Сбросить'
-							htmlType='reset'
-							type='clear'
-						/>
-						<Button
-							onClick={() => {
-								confirmChange();
-							}}
-							title='Применить'
-							htmlType='submit'
-							type='apply'
-						/>
+						<Button title='Сбросить' htmlType='reset' type='clear' />
+						<Button title='Применить' htmlType='submit' type='apply' />
 					</div>
 				</form>
 			</aside>
