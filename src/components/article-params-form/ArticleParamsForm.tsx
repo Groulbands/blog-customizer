@@ -36,7 +36,7 @@ export const ArticleParamsForm = ({
 	useEffect(() => {
 		if (!isOpen) return;
 
-		const handleCloseSideBar = (e: MouseEvent) => {
+		const handleClick = (e: MouseEvent) => {
 			if (
 				asideRef.current &&
 				e.target instanceof Element &&
@@ -46,10 +46,19 @@ export const ArticleParamsForm = ({
 				setIsOpen(false);
 			}
 		};
-		document.addEventListener('mousedown', handleCloseSideBar);
+
+		const handleKeyDown = (e: KeyboardEvent) => {
+			if (e.key == 'Escape') {
+				setIsOpen(false);
+			}
+		};
+
+		document.addEventListener('mousedown', handleClick);
+		document.addEventListener('keydown', handleKeyDown);
 
 		return () => {
-			document.removeEventListener('mousedown', handleCloseSideBar);
+			document.removeEventListener('mousedown', handleClick);
+			document.removeEventListener('keydown', handleKeyDown);
 		};
 	}, [isOpen]);
 
